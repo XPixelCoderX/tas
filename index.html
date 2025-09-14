@@ -220,7 +220,7 @@
         
         <div id="menuScreen" class="screen">
             <h1 class="title">HIGHWAY RACER</h1>
-            <h2 class="subtitle">Arrow Keys Edition</h2>
+            <h2 class="subtitle">Made by Edwin</h2>
             <button id="startBtn" class="btn">START GAME</button>
             <div class="car-preview">
                 <canvas id="carPreview" width="100" height="180"></canvas>
@@ -344,7 +344,7 @@
                 width: 50,
                 height: 90,
                 color: '#3498db',
-                speed: 12,
+                speed: 5,
                 moving: false
             };
             
@@ -456,7 +456,7 @@
             }
             
             function updateDifficulty() {
-                roadSpeed = 2 + Math.min(12, score / 150);
+                roadSpeed = 5 + Math.min(12, score / 150);
                 speed = Math.floor(roadSpeed * 25);
                 speedDisplay.textContent = `Speed: ${speed} mph`;
                 
