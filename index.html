@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Highway Racer - Arrow Keys Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        body {
+            background: linear-gradient(to bottom, #0c0c1d, #1a1a2e);
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 4px solid #3498db;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(52, 152, 219, 0.6);
+            overflow: hidden;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #uiLayer {
+            z-index: 10;
+        }
+        #gameLayer {
+            z-index: 5;
+        }
+        #roadLayer {
+            z-index: 1;
+        }
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 20;
+            transition: opacity 0.5s;
+        }
+        .title {
+            font-size: 65px;
+            font-weight: bold;
+            color: #3498db;
+            text-shadow: 0 0 15px rgba(52, 152, 219, 0.9);
+            margin-bottom: 25px;
+            animation: pulse 2s infinite;
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            font-size: 26px;
+            color: #e74c3c;
+            margin-bottom: 45px;
+            text-shadow: 0 0 8px rgba(231, 76, 60, 0.9);
+        }
+        .btn {
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 16px 35px;
+            font-size: 22px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 12px;
+            transition: all 0.3s;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+            letter-spacing: 1px;
+        }
+        .btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(to bottom, #3cb0fd, #3498db);
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        .instructions {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 35px;
+            max-width: 85%;
+            text-align: center;
+            border: 1px solid #3498db;
+        }
+        .instructions h2 {
+            color: #f39c12;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        .instructions p {
+            margin: 8px 0;
+            color: #ddd;
+            font-size: 18px;
+        }
+        .hidden {
+            display: none;
+        }
+        #scoreDisplay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 26px;
+            color: white;
+            z-index: 15;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 15px;
+            border-radius: 8px;
+        }
+        #speedDisplay {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            font-size: 22px;
+            color: #e74c3c;
+            z-index: 15;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 15px;
+            border-radius: 8px;
+        }
+        #highScoreDisplay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 22px;
+            color: #f39c12;
+            z-index: 15;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 15px;
+            border-radius: 8px;
+        }
+        #controlsDisplay {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 18px;
+            color: #3498db;
+            z-index: 15;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        #gameOverScreen {
+            text-align: center;
+        }
+        #finalScore {
+            font-size: 32px;
+            color: #f39c12;
+            margin: 25px 0;
+            text-shadow: 0 0 10px rgba(243, 156, 18, 0.8);
+        }
+        .car-preview {
+            width: 100px;
+            height: 180px;
+            margin: 20px auto;
+            position: relative;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+            100% { transform: scale(1); }
+        }
+        @keyframes roadMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100%; }
+        }
+        .glow {
+            text-shadow: 0 0 10px #3498db, 0 0 20px #3498db, 0 0 30px #3498db;
+        }
+        .key {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+            color: white;
+            text-align: center;
+            line-height: 40px;
+            border-radius: 6px;
+            margin: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="roadLayer" width="800" height="600"></canvas>
+        <canvas id="gameLayer" width="800" height="600"></canvas>
+        <canvas id="uiLayer" width="800" height="600"></canvas>
+        
+        <div id="scoreDisplay">Score: 0</div>
+        <div id="speedDisplay">Speed: 0 mph</div>
+        <div id="highScoreDisplay">High Score: 0</div>
+        <div id="controlsDisplay">
+            <div class="key">←</div>
+            <div class="key">→</div>
+            <div>CONTROLS</div>
+        </div>
+        
+        <div id="menuScreen" class="screen">
+            <h1 class="title">HIGHWAY RACER</h1>
+            <h2 class="subtitle">Arrow Keys Edition</h2>
+            <button id="startBtn" class="btn">START GAME</button>
+            <div class="car-preview">
+                <canvas id="carPreview" width="100" height="180"></canvas>
+            </div>
+            <div class="instructions">
+                <h2>How to Play</h2>
+                <p>Use LEFT and RIGHT arrow keys to control your car</p>
+                <p>Avoid other vehicles on the highway</p>
+                <p>The game gets faster and more difficult over time</p>
+                <p>Your progress is automatically saved</p>
+            </div>
+        </div>
+        
+        <div id="gameOverScreen" class="screen hidden">
+            <h1 class="title">GAME OVER</h1>
+            <div id="finalScore">Your score: 0</div>
+            <button id="restartBtn" class="btn">PLAY AGAIN</button>
+            <button id="menuBtn" class="btn">MAIN MENU</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const roadCanvas = document.getElementById('roadLayer');
+            const gameCanvas = document.getElementById('gameLayer');
+            const uiCanvas = document.getElementById('uiLayer');
+            const carPreviewCanvas = document.getElementById('carPreview');
+            const roadCtx = roadCanvas.getContext('2d');
+            const gameCtx = gameCanvas.getContext('2d');
+            const uiCtx = uiCanvas.getContext('2d');
+            const previewCtx = carPreviewCanvas.getContext('2d');
+            
+            const menuScreen = document.getElementById('menuScreen');
+            const gameOverScreen = document.getElementById('gameOverScreen');
+            const startBtn = document.getElementById('startBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            const menuBtn = document.getElementById('menuBtn');
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const speedDisplay = document.getElementById('speedDisplay');
+            const highScoreDisplay = document.getElementById('highScoreDisplay');
+            const finalScore = document.getElementById('finalScore');
+            
+            let gameActive = false;
+            let score = 0;
+            let highScore = 0;
+            let speed = 0;
+            let roadSpeed = 2;
+            let animationId;
+            let frames = 0;
+            let difficulty = 1;
+            let lastTime = 0;
+            let deltaTime = 0;
+            
+            // Key state tracking for immediate response
+            const keys = {
+                ArrowLeft: false,
+                ArrowRight: false
+            };
+            
+            // Load high score from localStorage
+            if (localStorage.getItem('highwayRacerHighScore')) {
+                highScore = parseInt(localStorage.getItem('highwayRacerHighScore'));
+                highScoreDisplay.textContent = `High Score: ${highScore}`;
+            }
+            
+            // Draw rounded rectangle function
+            function drawRoundedRect(ctx, x, y, width, height, radius, color) {
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                ctx.lineTo(x + width, y + height - radius);
+                ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                ctx.lineTo(x + radius, y + height);
+                ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
+            
+            // Draw car with rounded corners and details
+            function drawCar(ctx, x, y, width, height, primaryColor, isPlayer = false) {
+                // Main body
+                drawRoundedRect(ctx, x, y, width, height, 15, primaryColor);
+                
+                // Windshield
+                drawRoundedRect(ctx, x + 5, y + 10, width - 10, height * 0.25, 5, '#aadcff');
+                
+                // Side windows
+                drawRoundedRect(ctx, x + 5, y + height * 0.4, width - 10, height * 0.2, 5, '#34495e');
+                
+                // Headlights
+                drawRoundedRect(ctx, x + 5, y + height - 15, 10, 8, 3, '#ffffcc');
+                drawRoundedRect(ctx, x + width - 15, y + height - 15, 10, 8, 3, '#ffffcc');
+                
+                // Taillights
+                drawRoundedRect(ctx, x + 5, y + 5, 8, 10, 3, '#ff3333');
+                drawRoundedRect(ctx, x + width - 13, y + 5, 8, 10, 3, '#ff3333');
+                
+                // Details for player car
+                if (isPlayer) {
+                    drawRoundedRect(ctx, x + width/2 - 10, y + height * 0.3, 20, 5, 2, '#3498db');
+                    drawRoundedRect(ctx, x + width/2 - 15, y + height * 0.7, 30, 5, 2, '#3498db');
+                }
+            }
+            
+            // Draw preview car for menu
+            function drawPreviewCar() {
+                previewCtx.clearRect(0, 0, carPreviewCanvas.width, carPreviewCanvas.height);
+                drawCar(previewCtx, 25, 0, 50, 90, '#3498db', true);
+                
+                // Add spinning effect
+                carPreviewCanvas.style.transform = `rotate(${Math.sin(frames * 0.05) * 5}deg)`;
+            }
+            
+            const playerCar = {
+                x: roadCanvas.width / 2 - 25,
+                y: roadCanvas.height - 120,
+                width: 50,
+                height: 90,
+                color: '#3498db',
+                speed: 12,
+                moving: false
+            };
+            
+            let obstacles = [];
+            let roadLines = [];
+            
+            for (let i = 0; i < 20; i++) {
+                roadLines.push({
+                    x: roadCanvas.width / 2 - 2,
+                    y: i * 40,
+                    width: 4,
+                    height: 20,
+                    color: '#ffffff'
+                });
+            }
+            
+            function drawRoad() {
+                roadCtx.fillStyle = '#2c3e50';
+                roadCtx.fillRect(0, 0, roadCanvas.width, roadCanvas.height);
+                
+                roadCtx.fillStyle = '#7f8c8d';
+                roadCtx.fillRect(100, 0, roadCanvas.width - 200, roadCanvas.height);
+                
+                // Draw road markings
+                roadLines.forEach(line => {
+                    roadCtx.fillStyle = line.color;
+                    roadCtx.fillRect(line.x, line.y, line.width, line.height);
+                });
+                
+                // Draw road edges
+                roadCtx.strokeStyle = '#e74c3c';
+                roadCtx.lineWidth = 3;
+                roadCtx.beginPath();
+                roadCtx.moveTo(100, 0);
+                roadCtx.lineTo(100, roadCanvas.height);
+                roadCtx.moveTo(roadCanvas.width - 100, 0);
+                roadCtx.lineTo(roadCanvas.width - 100, roadCanvas.height);
+                roadCtx.stroke();
+            }
+            
+            function updateRoad() {
+                roadLines.forEach(line => {
+                    line.y += roadSpeed;
+                    if (line.y > roadCanvas.height) {
+                        line.y = -20;
+                    }
+                });
+            }
+            
+            function drawPlayer() {
+                drawCar(gameCtx, playerCar.x, playerCar.y, playerCar.width, playerCar.height, playerCar.color, true);
+            }
+            
+            function createObstacle() {
+                const width = 50;
+                const height = 90;
+                const x = Math.random() * (roadCanvas.width - 200 - width) + 100;
+                const colors = ['#e74c3c', '#f39c12', '#2ecc71', '#9b59b6'];
+                
+                obstacles.push({
+                    x: x,
+                    y: -height,
+                    width: width,
+                    height: height,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: roadSpeed + Math.random() * 2
+                });
+            }
+            
+            function updateObstacles() {
+                for (let i = 0; i < obstacles.length; i++) {
+                    const obs = obstacles[i];
+                    obs.y += obs.speed;
+                    
+                    if (obs.y > roadCanvas.height) {
+                        obstacles.splice(i, 1);
+                        score += 10;
+                        scoreDisplay.textContent = `Score: ${score}`;
+                        i--;
+                    }
+                }
+                
+                if (frames % (100 - Math.min(90, score / 10)) === 0) {
+                    createObstacle();
+                }
+            }
+            
+            function drawObstacles() {
+                obstacles.forEach(obs => {
+                    drawCar(gameCtx, obs.x, obs.y, obs.width, obs.height, obs.color);
+                });
+            }
+            
+            function checkCollision() {
+                for (let i = 0; i < obstacles.length; i++) {
+                    const obs = obstacles[i];
+                    
+                    // Simple collision detection
+                    if (
+                        playerCar.x < obs.x + obs.width - 10 &&
+                        playerCar.x + playerCar.width - 10 > obs.x &&
+                        playerCar.y < obs.y + obs.height - 10 &&
+                        playerCar.y + playerCar.height - 10 > obs.y
+                    ) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            function updateDifficulty() {
+                roadSpeed = 2 + Math.min(12, score / 150);
+                speed = Math.floor(roadSpeed * 25);
+                speedDisplay.textContent = `Speed: ${speed} mph`;
+                
+                difficulty = 1 + Math.floor(score / 100);
+            }
+            
+            function drawParticles() {
+                // Exhaust particles
+                if (frames % 3 === 0) {
+                    for (let i = 0; i < 2; i++) {
+                        const x = playerCar.x + Math.random() * playerCar.width;
+                        const y = playerCar.y + playerCar.height;
+                        
+                        uiCtx.beginPath();
+                        uiCtx.arc(x, y, Math.random() * 3, 0, Math.PI * 2);
+                        uiCtx.fillStyle = `rgba(200, 200, 200, ${Math.random() * 0.7})`;
+                        uiCtx.fill();
+                    }
+                }
+                
+                // Speed lines
+                if (speed > 60) {
+                    for (let i = 0; i < 5; i++) {
+                        const x = Math.random() * roadCanvas.width;
+                        const y = Math.random() * roadCanvas.height;
+                        const length = 10 + Math.random() * 20;
+                        
+                        uiCtx.beginPath();
+                        uiCtx.moveTo(x, y);
+                        uiCtx.lineTo(x - length, y + length);
+                        uiCtx.strokeStyle = `rgba(255, 255, 255, ${0.2 + Math.random() * 0.3})`;
+                        uiCtx.lineWidth = 1 + Math.random() * 2;
+                        uiCtx.stroke();
+                    }
+                }
+            }
+            
+            function updatePlayerPosition() {
+                // Immediate response to key presses
+                if (keys.ArrowLeft) {
+                    playerCar.x -= playerCar.speed;
+                    playerCar.moving = true;
+                }
+                if (keys.ArrowRight) {
+                    playerCar.x += playerCar.speed;
+                    playerCar.moving = true;
+                }
+                
+                // Boundary checks
+                playerCar.x = Math.max(100, Math.min(roadCanvas.width - playerCar.width - 100, playerCar.x));
+            }
+            
+            function gameLoop(timestamp) {
+                if (!lastTime) lastTime = timestamp;
+                deltaTime = timestamp - lastTime;
+                lastTime = timestamp;
+                
+                frames++;
+                
+                gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+                uiCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
+                
+                updateRoad();
+                drawRoad();
+                
+                updateObstacles();
+                drawObstacles();
+                
+                updatePlayerPosition();
+                drawPlayer();
+                
+                drawParticles();
+                
+                updateDifficulty();
+                
+                if (checkCollision()) {
+                    gameOver();
+                    return;
+                }
+                
+                animationId = requestAnimationFrame(gameLoop);
+            }
+            
+            function startGame() {
+                gameActive = true;
+                score = 0;
+                roadSpeed = 2;
+                obstacles = [];
+                frames = 0;
+                difficulty = 1;
+                lastTime = 0;
+                
+                playerCar.x = roadCanvas.width / 2 - 25;
+                playerCar.y = roadCanvas.height - 120;
+                
+                scoreDisplay.textContent = `Score: ${score}`;
+                speedDisplay.textContent = `Speed: ${speed} mph`;
+                
+                menuScreen.classList.add('hidden');
+                gameOverScreen.classList.add('hidden');
+                
+                animationId = requestAnimationFrame(gameLoop);
+            }
+            
+            function gameOver() {
+                gameActive = false;
+                cancelAnimationFrame(animationId);
+                
+                // Update high score if needed
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreDisplay.textContent = `High Score: ${highScore}`;
+                    // Save to localStorage
+                    localStorage.setItem('highwayRacerHighScore', highScore);
+                }
+                
+                finalScore.textContent = `Your score: ${score}`;
+                gameOverScreen.classList.remove('hidden');
+                
+                // Play crash sound
+                if (typeof crashSound !== 'undefined') {
+                    crashSound.currentTime = 0;
+                    crashSound.play();
+                }
+            }
+            
+            function handleKeyDown(e) {
+                if (!gameActive) return;
+                
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    keys[e.key] = true;
+                    e.preventDefault();
+                }
+            }
+            
+            function handleKeyUp(e) {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    keys[e.key] = false;
+                    playerCar.moving = false;
+                    e.preventDefault();
+                }
+            }
+            
+            startBtn.addEventListener('click', startGame);
+            restartBtn.addEventListener('click', startGame);
+            menuBtn.addEventListener('click', function() {
+                gameOverScreen.classList.add('hidden');
+                menuScreen.classList.remove('hidden');
+            });
+            
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+            
+            // Initialize the game visuals
+            drawRoad();
+            drawPreviewCar();
+            
+            // Animate the preview car
+            function animatePreview() {
+                if (!gameActive) {
+                    drawPreviewCar();
+                    requestAnimationFrame(animatePreview);
+                }
+            }
+            animatePreview();
+            
+            // Audio elements
+            const themeMusic = new Audio('https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Trickstown/Back_to_the_Island/Trickstown_-_01_-_Back_to_the_Island.mp3');
+            themeMusic.loop = true;
+            themeMusic.volume = 0.3;
+            
+            const menuMusic = new Audio('https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Aluminum_Cloud.mp3');
+            menuMusic.loop = true;
+            menuMusic.volume = 0.3;
+            
+            const crashSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-car-explosion-debris-1561.mp3');
+            crashSound.volume = 0.5;
+            
+            const engineSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-car-engine-rev-1191.mp3');
+            engineSound.loop = true;
+            engineSound.volume = 0.2;
+            
+            startBtn.addEventListener('click', function() {
+                menuMusic.pause();
+                themeMusic.currentTime = 0;
+                themeMusic.play();
+                engineSound.currentTime = 0;
+                engineSound.play();
+            });
+            
+            menuBtn.addEventListener('click', function() {
+                themeMusic.pause();
+                engineSound.pause();
+                menuMusic.currentTime = 0;
+                menuMusic.play();
+            });
+            
+            // Start menu music
+            menuMusic.play();
+        });
+    </script>
+</body>
+</html>
